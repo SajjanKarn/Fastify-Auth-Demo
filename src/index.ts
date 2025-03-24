@@ -8,6 +8,7 @@ import userRoute from "./routes/auth/auth";
 import { connectDB } from "./db/connection";
 import { ObjectId } from "mongoose";
 import User from "./models/User";
+import { postRoutes } from "./routes/post/post";
 
 // extend the FastifyInstance interface
 declare module "fastify" {
@@ -90,6 +91,7 @@ server.decorate("authenticate", async function (request, reply) {
 
 // routes
 server.register(userRoute, { prefix: "/api/auth" });
+server.register(postRoutes, { prefix: "/api/post" });
 
 server.ready().then(() => {
   server.swagger();
