@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 
 import { registerSchema } from "./_schema/registerSchema";
 import { loginSchema } from "./_schema/loginSchema";
+import User from "../../models/User";
 
 type Register = {
   name: string;
@@ -25,9 +26,7 @@ export default async function userRoute(server: FastifyInstance) {
     async (request, reply) => {
       const { name, email, password, contact } = request.body;
 
-      const UserCollection = server.mongo.db?.collection("users");
-
-      const isUserExist = await UserCollection?.findOne({ email });
+      const isUserExist = await User.findOne({ email });
       if (isUserExist) {
         return reply.code(400).send({
           message: "User already exist",
@@ -37,15 +36,17 @@ export default async function userRoute(server: FastifyInstance) {
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await UserCollection?.insertOne({
+        const newUser = new User({
           name,
           email,
           password: hashedPassword,
           contact,
         });
 
+        const result = await newUser.save();
+
         const token = server.jwt.sign({
-          _id: result?.insertedId,
+          _id: result?._id,
         });
 
         return {
@@ -68,9 +69,8 @@ export default async function userRoute(server: FastifyInstance) {
     async (request, reply) => {
       const { email, password } = request.body;
 
-      const UserCollection = server.mongo.db?.collection("users");
       try {
-        const user = await UserCollection?.findOne({ email });
+        const user = await User.findOne({ email });
 
         if (!user) {
           return reply.code(400).send({

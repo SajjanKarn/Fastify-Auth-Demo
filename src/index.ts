@@ -1,11 +1,13 @@
 import fastify, { FastifyInstance } from "fastify";
-import fastifyMongodb, { ObjectId } from "@fastify/mongodb";
 import fastifyJwt from "@fastify/jwt";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import dotenv from "dotenv";
 
 import userRoute from "./routes/auth/auth";
+import { connectDB } from "./db/connection";
+import { ObjectId } from "mongoose";
+import User from "./models/User";
 
 // extend the FastifyInstance interface
 declare module "fastify" {
@@ -22,14 +24,12 @@ dotenv.config();
 
 const server: FastifyInstance = fastify({ logger: true });
 
+// connect db
+connectDB();
+
 // plugins
 server.register(fastifyJwt, {
   secret: process.env.JWT_SECRET as string,
-});
-
-server.register(fastifyMongodb, {
-  url: process.env.MONGODB_URI as string,
-  forceClose: true,
 });
 
 server.register(fastifySwagger, {
@@ -75,18 +75,14 @@ server.decorate("authenticate", async function (request, reply) {
       _id: ObjectId;
       iat: number;
     };
-    const UserCollection = server.mongo.db?.collection("users");
-    const user = await UserCollection?.findOne({
-      _id: new ObjectId(result._id),
-    });
-
+    const user = await User.findOne({ _id: result._id });
     if (!user) {
       return reply.code(401).send({
         message: "Unauthorized",
       });
     }
 
-    request.user = { ...user, password: undefined };
+    request.user = user;
   } catch (err) {
     reply.send(err);
   }
