@@ -101,4 +101,14 @@ export default async function userRoute(server: FastifyInstance) {
       }
     }
   );
+
+  server.get(
+    "/protected",
+    {
+      onRequest: [server.authenticate],
+    },
+    async (request, reply) => {
+      return request.user;
+    }
+  );
 }

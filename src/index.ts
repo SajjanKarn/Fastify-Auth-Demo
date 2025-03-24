@@ -1,9 +1,19 @@
 import fastify, { FastifyInstance } from "fastify";
-import fastifyMongodb from "@fastify/mongodb";
+import fastifyMongodb, { ObjectId } from "@fastify/mongodb";
 import fastifyJwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
-import userRoute from "./routes/auth";
+import userRoute from "./routes/auth/auth";
+
+// extend the FastifyInstance interface
+declare module "fastify" {
+  interface FastifyInstance {
+    authenticate: (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => Promise<void>;
+  }
+}
 
 // dotenv configuration
 dotenv.config();
@@ -18,6 +28,30 @@ server.register(fastifyJwt, {
 server.register(fastifyMongodb, {
   url: process.env.MONGODB_URI as string,
   forceClose: true,
+});
+
+//
+server.decorate("authenticate", async function (request, reply) {
+  try {
+    const result = (await request.jwtVerify()) as {
+      _id: ObjectId;
+      iat: number;
+    };
+    const UserCollection = server.mongo.db?.collection("users");
+    const user = await UserCollection?.findOne({
+      _id: new ObjectId(result._id),
+    });
+
+    if (!user) {
+      return reply.code(401).send({
+        message: "Unauthorized",
+      });
+    }
+
+    request.user = { ...user, password: undefined };
+  } catch (err) {
+    reply.send(err);
+  }
 });
 
 // routes
