@@ -1,15 +1,27 @@
 import fastify, { FastifyInstance } from "fastify";
+import fastifyMongodb from "@fastify/mongodb";
+import fastifyJwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 import userRoute from "./routes/auth";
 
+// dotenv configuration
+dotenv.config();
+
 const server: FastifyInstance = fastify({ logger: true });
+
+// plugins
+server.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET as string,
+});
+
+server.register(fastifyMongodb, {
+  url: process.env.MONGODB_URI as string,
+  forceClose: true,
+});
 
 // routes
 server.register(userRoute, { prefix: "/api/auth" });
-
-// dotenv configuration
-dotenv.config();
 
 server.get("/", async (request, reply) => {
   return {
