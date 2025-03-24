@@ -2,6 +2,9 @@ import fastify, { FastifyInstance } from "fastify";
 import fastifyJwt from "@fastify/jwt";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import fastifyRateLimit from "@fastify/rate-limit";
+import fastifyHelmet from "@fastify/helmet";
+import fastifyCompress from "@fastify/compress";
 import dotenv from "dotenv";
 
 import userRoute from "./routes/auth/auth";
@@ -33,11 +36,25 @@ server.register(fastifyJwt, {
   secret: process.env.JWT_SECRET as string,
 });
 
+server.register(fastifyRateLimit, {
+  max: 25, // limit each IP to 25 requests per windowMs
+  timeWindow: "1 minute",
+});
+
+server.register(fastifyHelmet, {
+  contentSecurityPolicy: false,
+});
+
+server.register(fastifyCompress, {
+  global: false,
+});
+
 server.register(fastifySwagger, {
   swagger: {
     info: {
-      title: "API Documentation",
-      description: "API documentation for your application",
+      title: "Auth DEMO FASTIFY API",
+      description:
+        "This is a simple API made with Fastify which includes authentication and authorization, jwt, swagger, @fastify/jwt, @fastify/swagger, @fastify/swagger-ui, @fastify/rate-limit, @fastify/helmet, @fastify/compress",
       version: "1.0.0",
     },
     securityDefinitions: {
