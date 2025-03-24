@@ -106,6 +106,36 @@ export default async function userRoute(server: FastifyInstance) {
     "/protected",
     {
       onRequest: [server.authenticate],
+      schema: {
+        request: {
+          headers: {
+            type: "object",
+            properties: {
+              authorization: { type: "string" },
+            },
+            required: ["authorization"],
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              _id: { type: "string" },
+              name: { type: "string" },
+              email: { type: "string" },
+              contact: { type: "number" },
+            },
+          },
+          401: {
+            description: "Unauthorized - Invalid or missing token",
+            type: "object",
+            properties: {
+              message: { type: "string" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
     },
     async (request, reply) => {
       return request.user;

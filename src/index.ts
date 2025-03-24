@@ -1,6 +1,8 @@
 import fastify, { FastifyInstance } from "fastify";
 import fastifyMongodb, { ObjectId } from "@fastify/mongodb";
 import fastifyJwt from "@fastify/jwt";
+import fastifySwagger from "@fastify/swagger";
+import fastifySwaggerUi from "@fastify/swagger-ui";
 import dotenv from "dotenv";
 
 import userRoute from "./routes/auth/auth";
@@ -30,6 +32,42 @@ server.register(fastifyMongodb, {
   forceClose: true,
 });
 
+server.register(fastifySwagger, {
+  swagger: {
+    info: {
+      title: "API Documentation",
+      description: "API documentation for your application",
+      version: "1.0.0",
+    },
+    securityDefinitions: {
+      bearerAuth: {
+        type: "apiKey",
+        name: "Authorization",
+        in: "header",
+        description:
+          'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"',
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+    host: "localhost:" + (process.env.PORT || 3000),
+    schemes: ["http", "https"],
+    consumes: ["application/json"],
+    produces: ["application/json"],
+  },
+});
+
+server.register(fastifySwaggerUi, {
+  routePrefix: "/documentation",
+  uiConfig: {
+    docExpansion: "list",
+    deepLinking: false,
+  },
+});
+
 //
 server.decorate("authenticate", async function (request, reply) {
   try {
@@ -57,10 +95,8 @@ server.decorate("authenticate", async function (request, reply) {
 // routes
 server.register(userRoute, { prefix: "/api/auth" });
 
-server.get("/", async (request, reply) => {
-  return {
-    message: `server is up and running.`,
-  };
+server.ready().then(() => {
+  server.swagger();
 });
 
 const PORT = process.env.PORT || 3000;
